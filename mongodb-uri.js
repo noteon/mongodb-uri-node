@@ -100,7 +100,25 @@ MongodbUriParser.prototype.parse = function parse(uri) {
 MongodbUriParser.prototype._parseAddress = function _parseAddress(address, uriObject) {
     uriObject.hosts = [];
     address.split(',').forEach(function (h) {
-        var i = h.indexOf(':');
+        //by qinghai, support ipv6 address
+        //console.log("parseAddress",h);
+        // var url=require("url");
+        // var parseRst=url.parse('http://'+h);
+        // console.log(parseRst);
+        // var rst={host: parseRst.host};
+        // if (parseRst.port){
+        //     rst.port=parseRst.port;
+        // }
+
+        //uriObject.hosts.push(rst);
+        var i=(()=>{
+            if (h[h.length-1] ==="]"){//empty ipv6
+                return;
+            }
+    
+            return h.lastIndexOf(':');
+        })();
+
         if (i >= 0) {
             uriObject.hosts.push(
                     {
