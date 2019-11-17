@@ -191,7 +191,14 @@ MongodbUriParser.prototype._formatAddress = function _formatAddress(uriObject) {
         if (i > 0) {
             address += ',';
         }
-        address += encodeURIComponent(h.host);
+        if (['[',':'].indexOf(h.host[0])>-1){ //ipv6
+            address += h.host;
+        }else{
+            address += encodeURIComponent(h.host);
+        }
+
+        
+
         if (h.port) {
             address += ':' + encodeURIComponent(h.port);
         }
