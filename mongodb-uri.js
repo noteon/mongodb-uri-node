@@ -173,10 +173,10 @@ MongodbUriParser.prototype.format = function format(uriObject) {
 
             var value=(function(){
                 var o=uriObject.options[k];
-                
+
                 if (typeof o==="object"){
                     return Object.keys(o).reduce(function (memo, e,idx){
-                        memo+=((idx===0)?"":",")+ `${e}=${encodeURIComponent(o[e])}`
+                        memo+=((idx===0)?"":",")+ `${e}:${encodeURIComponent(o[e])}`
 
                         return memo;
                     },"")
