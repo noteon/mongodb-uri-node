@@ -170,7 +170,23 @@ MongodbUriParser.prototype.format = function format(uriObject) {
     if (uriObject.options) {
         Object.keys(uriObject.options).forEach(function (k, i) {
             uri += i === 0 ? '?' : '&';
-            uri += encodeURIComponent(k) + '=' + encodeURIComponent(uriObject.options[k]);
+
+            var value=(function(){
+                var o=uriObject.options[k];
+                
+                if (typeof o==="object"){
+                    return Object.keys(o).reduce(function (memo, e,idx){
+                        memo+=((idx===0)?"":",")+ `${e}=${encodeURIComponent(o[e])}`
+
+                        return memo;
+                    },"")
+    
+                }else{
+                    return  encodeURIComponent(o);
+                }
+            })();
+
+            uri += encodeURIComponent(k) + '=' + value;
         });
     }
 

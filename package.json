@@ -1,6 +1,6 @@
 {
     "name": "qh-mongodb-uri",
-    "version": "0.9.9",
+    "version": "0.9.10",
     "description": "A parser and formatter for MongoDB URIs. forked",
     "keywords": [
         "mongodb",
@@ -16,9 +16,9 @@
     ],
     "repository": {
         "type": "git",
-        "url": "https://github.com/mongolab/mongodb-uri-node.git"
+        "url": "git@github.com:noteon/mongodb-uri-node.git"
     },
-    "homepage": "https://github.com/mongolab/mongodb-uri-node",
+    "homepage": "https://github.com/noteon/mongodb-uri-node",
     "license": "MIT",
     "main": "mongodb-uri",
     "devDependencies": {
