@@ -115,7 +115,7 @@ const CASE_TRANSLATION = {
  * @param {!String} uri
  * @return {Object}
  */
-MongodbUriParser.prototype.parse = function parse(uri) {
+ MongodbUriParser.prototype.parse = function parse(uri) {
 
     var uriObject = {};
 
@@ -143,7 +143,6 @@ MongodbUriParser.prototype.parse = function parse(uri) {
     }
 
     i = rest.indexOf('?');
-
     if (i >= 0) {
         var options = rest.substring(i + 1);
         rest = rest.substring(0, i);
@@ -154,17 +153,19 @@ MongodbUriParser.prototype.parse = function parse(uri) {
             var lowerK=key.toLowerCase();
             var value=decodeURIComponent(o.substring(iEquals + 1));
 
-            var parsedValue=parseQueryStringItemValue(lowerK,value);
+            //var parsedValue=parseQueryStringItemValue(lowerK,value);
+            var parsedValue=value;
 
             if (lowerK==="readpreferencetags"){
                 var tags=uriObject.options[CASE_TRANSLATION[lowerK]] || [];
                 uriObject.options[CASE_TRANSLATION[lowerK]]= tags;
 
 
-                uriObject.options[CASE_TRANSLATION[lowerK]].push( parsedValue || {});
+                uriObject.options[CASE_TRANSLATION[lowerK]].push( parsedValue || "");
             }else{
                 uriObject.options[CASE_TRANSLATION[lowerK] || key] = parsedValue;
             }
+
         });
     }
 
@@ -182,7 +183,6 @@ MongodbUriParser.prototype.parse = function parse(uri) {
     return uriObject;
 
 };
-
 /**
  * Parses the address into the uriObject, mutating it.
  *

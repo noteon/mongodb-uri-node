@@ -1,6 +1,6 @@
 {
     "name": "qh-mongodb-uri",
-    "version": "0.9.13",
+    "version": "0.9.14",
     "description": "A parser and formatter for MongoDB URIs. forked",
     "keywords": [
         "mongodb",

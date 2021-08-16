@@ -147,7 +147,7 @@ var testCases = [
         password: 'password',
         options: {
             authSource: 'admin',
-            maxPoolSize: 5,
+            maxPoolSize: "5",
             replicaSet: 'tesla'
         },
         database: 'database',
@@ -169,15 +169,15 @@ var testCases = [
           password: 'password',
           options: {
             authSource: 'admin',
-            compressors:["snappy","zlib"],
-            zlibCompressionLevel:9
+            compressors:"snappy,zlib",
+            zlibCompressionLevel:"9"
           },
+          database: 'database',
           hosts: [
             {
               host: 'test.mongodb.net',
             }
           ],
-          database: 'database',
         }
     },
     {
@@ -191,20 +191,18 @@ var testCases = [
           options: {
             authSource: 'admin',
             readPreference:"secondary",
-            readPreferenceTags:[{dc:"ny", rack:1}, {dc:"ny"}, {}],
-            maxPoolSize: 5
+            readPreferenceTags:["dc:ny,rack:1", "dc:ny", ""],
+            maxPoolSize: "5",
           },
+          database: 'database',
           hosts: [
             {
               host: 'test.mongodb.net',
             }
           ],
-          database: 'database',
         }
     },
     {
-        //authMechanismProperties=SERVICE_NAME:mongodb,CANONICALIZE_HOST_NAME:true,SERVICE_REALM:test
-        //options is object
         standardUri: `mongodb+srv://username:password@test.mongodb.net/database?authSource=%24external&authMechanism=GSSAPI&authMechanismProperties=SERVICE_NAME%3Amongodb%2CCANONICALIZE_HOST_NAME%3Atrue%2CSERVICE_REALM%3Atest`,
         mongooseConnectionString: `mongodb+srv://username:password@test.mongodb.net/database?authSource=%24external&authMechanism=GSSAPI&authMechanismProperties=SERVICE_NAME%3Amongodb%2CCANONICALIZE_HOST_NAME%3Atrue%2CSERVICE_REALM%3Atest`,
         
@@ -215,14 +213,14 @@ var testCases = [
           options: {
             authSource: '$external',
             authMechanism: "GSSAPI",
-            authMechanismProperties: {SERVICE_NAME:"mongodb",CANONICALIZE_HOST_NAME:true,SERVICE_REALM:"test"},
+            authMechanismProperties: `SERVICE_NAME:mongodb,CANONICALIZE_HOST_NAME:true,SERVICE_REALM:test`,
           },
+          database: 'database',
           hosts: [
             {
               host: 'test.mongodb.net',
             }
           ],
-          database: 'database',
         }
       }
 ];
@@ -239,6 +237,7 @@ describe('mongodb-uri', function () {
                 mongodbUri.parse(test.standardUri).should.eql(test.uriObject);
             });
         });
+
         it('should handle a trailing slash with no database', function () {
             mongodbUri.parse('mongodb://localhost/').should.eql(
                     {
@@ -254,7 +253,7 @@ describe('mongodb-uri', function () {
                     {
                         scheme: 'mongodb',
                         options: {
-                            someOption: true
+                            someOption: "true"
                         },
                         hosts: [
                             {
@@ -279,6 +278,27 @@ describe('mongodb-uri', function () {
         it('should reject unexpected schemes', function () {
             (function () { strictParser.parse('somescheme://localhost'); }).should.throw();
         });
+
+        it("should normalize query name",function(){
+            mongodbUri.parse('mongodb+srv://username:password@test.mongodb.net/database?authsource=admin&readpreference=secondary&maxPoolSize=5').should.eql(
+                {
+                    scheme: 'mongodb+srv',
+                    username: 'username',
+                    password: 'password',
+                    options: {
+                      authSource: 'admin',
+                      readPreference:"secondary",
+                      maxPoolSize: "5",
+                    },
+                    database: 'database',
+                    hosts: [
+                      {
+                        host: 'test.mongodb.net',
+                      }
+                    ],
+                  }
+            );            
+        });
     });
     describe('.format()', function () {
         it('should handle no argument', function () {
@@ -288,6 +308,26 @@ describe('mongodb-uri', function () {
             it('should handle "' + test.standardUri + '"', function () {
                 mongodbUri.format(test.uriObject).should.eql(test.standardUri);
             });
+        });
+        it('should handle referenceTags format', function () {
+            mongodbUri.format(
+                {
+                    scheme: 'mongodb',
+                    username: 'username',
+                    password: 'password',
+                    options: {
+                      readPreference:"secondary",
+                      readPreferenceTags:["dc:ny,rack:1", "dc:ny", ""],
+                      compressors:["snappy,zlib"],
+                      authMechanismProperties: {SERVICE_NAME:"mongodb",CANONICALIZE_HOST_NAME:true,SERVICE_REALM:'test'},
+                    },
+                    database: 'database',
+                    hosts: [
+                      {
+                        host: 'test.mongodb.net',
+                      }
+                    ],
+                  }).should.eql(`mongodb://username:password@test.mongodb.net/database?readPreference=secondary&readPreferenceTags=dc%3Any%2Crack%3A1&readPreferenceTags=dc%3Any&readPreferenceTags=&compressors=snappy%2Czlib&authMechanismProperties=SERVICE_NAME%3Amongodb%2CCANONICALIZE_HOST_NAME%3Atrue%2CSERVICE_REALM%3Atest`);
         });
         it('should handle non-standard schemes', function () {
             mongodbUri.format(
@@ -327,4 +367,6 @@ describe('mongodb-uri', function () {
             });
         });
     });
+
+
 });
