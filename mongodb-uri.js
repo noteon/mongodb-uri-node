@@ -53,6 +53,46 @@ const STRING_OPTIONS = new Set(['authsource', 'replicaset']);
   }
   
 
+// Lookup table used to translate normalized (lower-cased) forms of connection string
+// options to their expected camelCase version
+const CASE_TRANSLATION = {
+    replicaset: 'replicaSet',
+    connecttimeoutms: 'connectTimeoutMS',
+    sockettimeoutms: 'socketTimeoutMS',
+    maxpoolsize: 'maxPoolSize',
+    minpoolsize: 'minPoolSize',
+    maxidletimems: 'maxIdleTimeMS',
+    waitqueuemultiple: 'waitQueueMultiple',
+    waitqueuetimeoutms: 'waitQueueTimeoutMS',
+    wtimeoutms: 'wtimeoutMS',
+    readconcern: 'readConcern',
+    readconcernlevel: 'readConcernLevel',
+    readpreference: 'readPreference',
+    maxstalenessseconds: 'maxStalenessSeconds',
+    readpreferencetags: 'readPreferenceTags',
+    authsource: 'authSource',
+    authmechanism: 'authMechanism',
+    authmechanismproperties: 'authMechanismProperties',
+    gssapiservicename: 'gssapiServiceName',
+    localthresholdms: 'localThresholdMS',
+    serverselectiontimeoutms: 'serverSelectionTimeoutMS',
+    serverselectiontryonce: 'serverSelectionTryOnce',
+    heartbeatfrequencyms: 'heartbeatFrequencyMS',
+    retrywrites: 'retryWrites',
+    uuidrepresentation: 'uuidRepresentation',
+    zlibcompressionlevel: 'zlibCompressionLevel',
+    tlsallowinvalidcertificates: 'tlsAllowInvalidCertificates',
+    tlsallowinvalidhostnames: 'tlsAllowInvalidHostnames',
+    tlsinsecure: 'tlsInsecure',
+    tlscafile: 'tlsCAFile',
+    tlscertificatekeyfile: 'tlsCertificateKeyFile',
+    tlscertificatekeyfilepassword: 'tlsCertificateKeyFilePassword',
+    wtimeout: 'wTimeoutMS',
+    j: 'journal',
+    directconnection: 'directConnection'
+  };
+  
+
 /**
  * Takes a URI of the form:
  *
@@ -111,10 +151,20 @@ MongodbUriParser.prototype.parse = function parse(uri) {
         options.split('&').forEach(function (o) {
             var iEquals = o.indexOf('=');
             var key=decodeURIComponent(o.substring(0, iEquals));
+            var lowerK=key.toLowerCase();
             var value=decodeURIComponent(o.substring(iEquals + 1));
 
+            var parsedValue=parseQueryStringItemValue(lowerK,value);
 
-            uriObject.options[key] = parseQueryStringItemValue(key,value);
+            if (lowerK==="readpreferencetags"){
+                var tags=uriObject.options[CASE_TRANSLATION[lowerK]] || [];
+                uriObject.options[CASE_TRANSLATION[lowerK]]= tags;
+
+
+                uriObject.options[CASE_TRANSLATION[lowerK]].push( parsedValue || {});
+            }else{
+                uriObject.options[CASE_TRANSLATION[lowerK] || key] = parsedValue;
+            }
         });
     }
 
@@ -175,6 +225,25 @@ MongodbUriParser.prototype._parseAddress = function _parseAddress(address, uriOb
     });
 };
 
+function formatValue(value){
+    if (Array.isArray(value)){
+        return value.map(function(e){return formatValue(e)}).join(",")
+    }else   if (typeof value==="object"){
+        return Object.keys(value).reduce(function (memo, e,idx){
+            memo+=((idx===0)?"":",")+ `${e}:${formatValue(value[e])}`
+
+            return memo;
+        },"")
+
+    }else{
+        return  value;
+    }
+}
+
+
+function isEmpty(obj) {
+    return Object.keys(obj).length === 0;
+}
 /**
  * Takes a URI object and returns a URI string of the form:
  *
@@ -210,28 +279,23 @@ MongodbUriParser.prototype.format = function format(uriObject) {
         uri += '/' + encodeURIComponent(uriObject.database);
     }
 
+
+
     if (uriObject.options) {
         Object.keys(uriObject.options).forEach(function (k, i) {
             uri += i === 0 ? '?' : '&';
 
-            var value=(function(){
-                var o=uriObject.options[k];
-
-                if (Array.isArray(o)){
-                    return o.join(",")
-                }else   if (typeof o==="object"){
-                    return Object.keys(o).reduce(function (memo, e,idx){
-                        memo+=((idx===0)?"":",")+ `${e}:${o[e]}`
-
-                        return memo;
-                    },"")
-    
-                }else{
-                    return  o;
-                }
-            })();
-
-            uri += encodeURIComponent(k) + '=' + encodeURIComponent(value);
+            if ((k==="readPreferenceTags") && Array.isArray(uriObject.options[k])){
+                uri+=(uriObject.options[k].map(function(tags){
+                    if (isEmpty(tags)){
+                        return k + "="
+                    }else{
+                        return k + "="+ encodeURIComponent(formatValue(tags));
+                    }
+                }).join("&"));
+            }else{
+                uri += encodeURIComponent(k) + '=' + encodeURIComponent(formatValue(uriObject.options[k]));
+            }
         });
     }
 

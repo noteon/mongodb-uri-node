@@ -181,6 +181,28 @@ var testCases = [
         }
     },
     {
+        standardUri: `mongodb+srv://username:password@test.mongodb.net/database?authSource=admin&readPreference=secondary&readPreferenceTags=${encodeURIComponent(`dc:ny,rack:1`)}&readPreferenceTags=${encodeURIComponent(`dc:ny`)}&readPreferenceTags=&maxPoolSize=5`, 
+        mongooseConnectionString: `mongodb+srv://username:password@test.mongodb.net/database?authSource=admin&readPreference=secondary&readPreferenceTags=${encodeURIComponent(`dc:ny,rack:1`)}&readPreferenceTags=${encodeURIComponent(`dc:ny`)}&readPreferenceTags=&maxPoolSize=5`, 
+        
+        uriObject: {
+          scheme: 'mongodb+srv',
+          username: 'username',
+          password: 'password',
+          options: {
+            authSource: 'admin',
+            readPreference:"secondary",
+            readPreferenceTags:[{dc:"ny", rack:1}, {dc:"ny"}, {}],
+            maxPoolSize: 5
+          },
+          hosts: [
+            {
+              host: 'test.mongodb.net',
+            }
+          ],
+          database: 'database',
+        }
+    },
+    {
         //authMechanismProperties=SERVICE_NAME:mongodb,CANONICALIZE_HOST_NAME:true,SERVICE_REALM:test
         //options is object
         standardUri: `mongodb+srv://username:password@test.mongodb.net/database?authSource=%24external&authMechanism=GSSAPI&authMechanismProperties=SERVICE_NAME%3Amongodb%2CCANONICALIZE_HOST_NAME%3Atrue%2CSERVICE_REALM%3Atest`,
