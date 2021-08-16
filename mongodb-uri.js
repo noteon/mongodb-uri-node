@@ -15,6 +15,44 @@ function MongodbUriParser(options) {
     }
 }
 
+// Known string options, only used to bypass Number coercion in `parseQueryStringItemValue`
+const STRING_OPTIONS = new Set(['authsource', 'replicaset']);
+
+/**
+ * Parses a query string item according to the connection string spec
+ *
+ * @param {string} key The key for the parsed value
+ * @param {Array|String} value The value to parse
+ * @return {Array|Object|String} The parsed value
+ */
+ function parseQueryStringItemValue(key, value) {
+    if (Array.isArray(value)) {
+      // deduplicate and simplify arrays
+      value = value.filter((v, idx) => value.indexOf(v) === idx);
+      if (value.length === 1) value = value[0];
+    } else if (value.indexOf(':') > 0) {
+      value = value.split(',').reduce((result, pair) => {
+        const parts = pair.split(':');
+        result[parts[0]] = parseQueryStringItemValue(key, parts[1]);
+        return result;
+      }, {});
+    } else if (value.indexOf(',') > 0) {
+      value = value.split(',').map(v => {
+        return parseQueryStringItemValue(key, v);
+      });
+    } else if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
+      value = value.toLowerCase() === 'true';
+    } else if (!Number.isNaN(value) && !STRING_OPTIONS.has(key)) {
+      const numericValue = parseFloat(value);
+      if (!Number.isNaN(numericValue)) {
+        value = parseFloat(value);
+      }
+    }
+  
+    return value;
+  }
+  
+
 /**
  * Takes a URI of the form:
  *
@@ -65,13 +103,18 @@ MongodbUriParser.prototype.parse = function parse(uri) {
     }
 
     i = rest.indexOf('?');
+
     if (i >= 0) {
         var options = rest.substring(i + 1);
         rest = rest.substring(0, i);
         uriObject.options = {};
         options.split('&').forEach(function (o) {
             var iEquals = o.indexOf('=');
-            uriObject.options[decodeURIComponent(o.substring(0, iEquals))] = decodeURIComponent(o.substring(iEquals + 1));
+            var key=decodeURIComponent(o.substring(0, iEquals));
+            var value=decodeURIComponent(o.substring(iEquals + 1));
+
+
+            uriObject.options[key] = parseQueryStringItemValue(key,value);
         });
     }
 
@@ -174,19 +217,21 @@ MongodbUriParser.prototype.format = function format(uriObject) {
             var value=(function(){
                 var o=uriObject.options[k];
 
-                if (typeof o==="object"){
+                if (Array.isArray(o)){
+                    return o.join(",")
+                }else   if (typeof o==="object"){
                     return Object.keys(o).reduce(function (memo, e,idx){
-                        memo+=((idx===0)?"":",")+ `${e}:${encodeURIComponent(o[e])}`
+                        memo+=((idx===0)?"":",")+ `${e}:${o[e]}`
 
                         return memo;
                     },"")
     
                 }else{
-                    return  encodeURIComponent(o);
+                    return  o;
                 }
             })();
 
-            uri += encodeURIComponent(k) + '=' + value;
+            uri += encodeURIComponent(k) + '=' + encodeURIComponent(value);
         });
     }
 

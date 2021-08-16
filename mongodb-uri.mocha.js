@@ -145,21 +145,66 @@ var testCases = [
         scheme: 'mongodb',
         username: 'username',
         password: 'password',
-        hosts: [
-          {
-            host: 'host',
-            port: 1234
-          }
-        ],
-        database: 'database',
         options: {
-          authSource: 'admin',
-          maxPoolSize: '5',
-          replicaSet: 'tesla'
+            authSource: 'admin',
+            maxPoolSize: 5,
+            replicaSet: 'tesla'
+        },
+        database: 'database',
+        hosts: [
+        {
+          host: 'host',
+          port: 1234
+            }
+        ],
+      }
+    },
+    {
+        standardUri: `mongodb+srv://username:password@test.mongodb.net/database?authSource=admin&compressors=snappy%2Czlib&zlibCompressionLevel=9`, //options is array
+        mongooseConnectionString: `mongodb+srv://username:password@test.mongodb.net/database?authSource=admin&compressors=snappy%2Czlib&zlibCompressionLevel=9`,
+        
+        uriObject: {
+          scheme: 'mongodb+srv',
+          username: 'username',
+          password: 'password',
+          options: {
+            authSource: 'admin',
+            compressors:["snappy","zlib"],
+            zlibCompressionLevel:9
+          },
+          hosts: [
+            {
+              host: 'test.mongodb.net',
+            }
+          ],
+          database: 'database',
+        }
+    },
+    {
+        //authMechanismProperties=SERVICE_NAME:mongodb,CANONICALIZE_HOST_NAME:true,SERVICE_REALM:test
+        //options is object
+        standardUri: `mongodb+srv://username:password@test.mongodb.net/database?authSource=%24external&authMechanism=GSSAPI&authMechanismProperties=SERVICE_NAME%3Amongodb%2CCANONICALIZE_HOST_NAME%3Atrue%2CSERVICE_REALM%3Atest`,
+        mongooseConnectionString: `mongodb+srv://username:password@test.mongodb.net/database?authSource=%24external&authMechanism=GSSAPI&authMechanismProperties=SERVICE_NAME%3Amongodb%2CCANONICALIZE_HOST_NAME%3Atrue%2CSERVICE_REALM%3Atest`,
+        
+        uriObject: {
+          scheme: 'mongodb+srv',
+          username: 'username',
+          password: 'password',
+          options: {
+            authSource: '$external',
+            authMechanism: "GSSAPI",
+            authMechanismProperties: {SERVICE_NAME:"mongodb",CANONICALIZE_HOST_NAME:true,SERVICE_REALM:"test"},
+          },
+          hosts: [
+            {
+              host: 'test.mongodb.net',
+            }
+          ],
+          database: 'database',
         }
       }
-    }
 ];
+
 Object.keys(testCases).forEach(function (t) {
     testCases[t].scheme = 'mongodb';
 });
@@ -186,14 +231,14 @@ describe('mongodb-uri', function () {
             mongodbUri.parse('mongodb://localhost/?someOption=true').should.eql(
                     {
                         scheme: 'mongodb',
+                        options: {
+                            someOption: true
+                        },
                         hosts: [
                             {
                                 host: 'localhost'
                             }
                         ],
-                        options: {
-                            someOption: 'true'
-                        }
                     }
             );
         });
